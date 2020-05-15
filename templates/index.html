@@ -4,10 +4,11 @@
             <title>{{.Title}}</title>
             <meta name="description" content="{{.Content}}">
         {{end}}
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"/>
         {{template "head"}}
     </head>
     <body>
-        
+
         {{range .User}}
             {{if ne .Role ""}}
                 <header class="logout">

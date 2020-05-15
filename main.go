@@ -47,7 +47,7 @@ func main() {
 	http.HandleFunc("/login", login)
         http.HandleFunc("/logout", authorized(logout))
         http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
-	http.Handle("favicon.ico", http.NotFoundHandler())
+	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.ListenAndServe(":8080", nil)
 }
 
