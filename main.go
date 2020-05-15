@@ -6,6 +6,7 @@ import (
 	"html/template"
         "net/http"
         "time"
+        "log"
 )
 
 type user struct {
@@ -21,14 +22,22 @@ type session struct {
 	lastActivity time.Time
 }
 
+type meta struct {
+        Title   string
+        Content string
+}    
+
 var tpl *template.Template
 var dbUsers = map[string]user{}       // user ID, user
 var dbSessions = map[string]session{} // session ID, session
 
+var dbSessionsCleaned time.Time // remove later
+
 const sessionLength int = 3000
 
 func init() {
-	tpl = template.Must(template.ParseGlob("templates/*"))
+        tpl = template.Must(template.ParseGlob("templates/*"))
+        dbSessionsCleaned = time.Now()
 }
 
 func main() {
@@ -44,12 +53,23 @@ func main() {
 
 func index(w http.ResponseWriter, req *http.Request) {
         u := getUser(w, req)
+        m := meta{
+                Title: "Chris King | Full Stack Web Developer",
+                Content: "Full Stack Web Developer, currently based in Las Vegas, Nevada",
+        }
         showSessions() 
-        tpl.ExecuteTemplate(w, "index.html", u)
+        err := tpl.ExecuteTemplate(w, "index.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
+        if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func admin(w http.ResponseWriter, req *http.Request) {
-	u := getUser(w, req)
+        u := getUser(w, req)
+        m := meta{
+                Title: "Chris King | Admin",
+                Content: "Admin",
+        }
 	if !alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/login", http.StatusSeeOther)
 		return
@@ -59,7 +79,10 @@ func admin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	showSessions() // for demonstration purposes
-	tpl.ExecuteTemplate(w, "admin.html", u)
+        err := tpl.ExecuteTemplate(w, "admin.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
+        if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func signup(w http.ResponseWriter, req *http.Request) {
@@ -101,9 +124,13 @@ func signup(w http.ResponseWriter, req *http.Request) {
 		// redirect
 		http.Redirect(w, req, "/admin", http.StatusSeeOther)
 		return
-	}
+        }
+        m := meta{
+                Title: "Chris King | Sign up",
+                Content: "Signup",
+        }
 	showSessions() // for demonstration purposes
-	tpl.ExecuteTemplate(w, "signup.html", u)
+	tpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
 }
 
 func login(w http.ResponseWriter, req *http.Request) {
@@ -111,7 +138,11 @@ func login(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
-	var u user
+        var u user
+        m := meta{
+                Title: "Chris King | Login",
+                Content: "Login",
+        }
 	// process form submission
 	if req.Method == http.MethodPost {
 		un := req.FormValue("username")
@@ -139,9 +170,9 @@ func login(w http.ResponseWriter, req *http.Request) {
 		dbSessions[c.Value] = session{un, time.Now()}
 		http.Redirect(w, req, "/admin", http.StatusSeeOther)
 		return
-	}
+        }
 	showSessions() // for demonstration purposes
-	tpl.ExecuteTemplate(w, "login.html", u)
+	tpl.ExecuteTemplate(w, "login.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
 }
 
 func logout(w http.ResponseWriter, req *http.Request) {
@@ -154,9 +185,14 @@ func logout(w http.ResponseWriter, req *http.Request) {
 		Value:  "",
 		MaxAge: -1,
 	}
-	http.SetCookie(w, c)
+        http.SetCookie(w, c)
+        
+        // clean up dbSessions
+	if time.Now().Sub(dbSessionsCleaned) > (time.Second * 30) {
+		go cleanSessions()
+	}
 
-	http.Redirect(w, req, "/login", http.StatusSeeOther)
+	http.Redirect(w, req, "/", http.StatusSeeOther)
 }
 
 func authorized(h http.HandlerFunc) http.HandlerFunc {
