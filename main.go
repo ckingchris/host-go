@@ -83,7 +83,8 @@ func adminHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if u.Role != "admin" {
-		http.Error(w, "You must be an admin to enter", http.StatusForbidden)
+                http.Redirect(w, req, "/", http.StatusSeeOther)
+		// http.Error(w, "You must be an admin to enter", http.StatusForbidden)
 		return
 	}
 	showSessions() // for demonstration purposes
