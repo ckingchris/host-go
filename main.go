@@ -41,17 +41,21 @@ func init() {
 }
 
 func main() {
-        http.HandleFunc("/", index)
-        http.HandleFunc("/admin", admin)
-        http.HandleFunc("/signup", signup)
-	http.HandleFunc("/login", login)
-        http.HandleFunc("/logout", authorized(logout))
+        http.HandleFunc("/favicon.ico", faviconHandler)
+        http.HandleFunc("/", indexHandler)
+        http.HandleFunc("/admin", adminHandler)
+        http.HandleFunc("/signup", signupHandler)
+	http.HandleFunc("/login", loginHandler)
+        http.HandleFunc("/logout", authorized(logoutHandler))
         http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
-	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.ListenAndServe(":8080", nil)
 }
 
-func index(w http.ResponseWriter, req *http.Request) {
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "favicon.ico")
+}
+
+func indexHandler(w http.ResponseWriter, req *http.Request) {
         u := getUser(w, req)
         m := meta{
                 Title: "Chris King | Full Stack Web Developer",
@@ -64,7 +68,7 @@ func index(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func admin(w http.ResponseWriter, req *http.Request) {
+func adminHandler(w http.ResponseWriter, req *http.Request) {
         u := getUser(w, req)
         m := meta{
                 Title: "Chris King | Admin",
@@ -85,7 +89,7 @@ func admin(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func signup(w http.ResponseWriter, req *http.Request) {
+func signupHandler(w http.ResponseWriter, req *http.Request) {
 	if alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
@@ -133,7 +137,7 @@ func signup(w http.ResponseWriter, req *http.Request) {
 	tpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
 }
 
-func login(w http.ResponseWriter, req *http.Request) {
+func loginHandler(w http.ResponseWriter, req *http.Request) {
 	if alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
@@ -175,7 +179,7 @@ func login(w http.ResponseWriter, req *http.Request) {
 	tpl.ExecuteTemplate(w, "login.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
 }
 
-func logout(w http.ResponseWriter, req *http.Request) {
+func logoutHandler(w http.ResponseWriter, req *http.Request) {
 	c, _ := req.Cookie("session")
 	// delete the session
 	delete(dbSessions, c.Value)
@@ -206,4 +210,3 @@ func authorized(h http.HandlerFunc) http.HandlerFunc {
 		// code after
 	})
 }
-
