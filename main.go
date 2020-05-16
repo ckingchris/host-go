@@ -25,7 +25,11 @@ type session struct {
 type meta struct {
         Title   string
         Content string
-}    
+}
+
+type ErrorMessage struct {
+        Error string
+}
 
 var tpl *template.Template
 var dbUsers = map[string]user{}       // user ID, user
@@ -94,7 +98,14 @@ func signupHandler(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
-	var u user
+        var u user
+        m := meta{
+                Title: "Chris King | Sign up",
+                Content: "Signup",
+        }
+        e := ErrorMessage{
+                Error: "Username already exists",
+        }
 	// process form submission
 	if req.Method == http.MethodPost {
 		// get form values
@@ -103,9 +114,10 @@ func signupHandler(w http.ResponseWriter, req *http.Request) {
 		f := req.FormValue("fname")
 		l := req.FormValue("lname")
 		r := req.FormValue("role")
-		// username taken?
+		// check if username exists
 		if _, ok := dbUsers[un]; ok {
-			http.Error(w, "Username already taken", http.StatusForbidden)
+                        tpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}, "Error":[]ErrorMessage{e}})
+			// http.Error(w, "Username already exists", http.StatusForbidden)
 			return
 		}
 		// create session
@@ -129,10 +141,6 @@ func signupHandler(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/admin", http.StatusSeeOther)
 		return
         }
-        m := meta{
-                Title: "Chris King | Sign up",
-                Content: "Signup",
-        }
 	showSessions() // for demonstration purposes
 	tpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}})
 }
@@ -147,20 +155,25 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
                 Title: "Chris King | Login",
                 Content: "Login",
         }
+        e := ErrorMessage{
+                Error: "Username and/or password do not match",
+        }
 	// process form submission
 	if req.Method == http.MethodPost {
 		un := req.FormValue("username")
 		p := req.FormValue("password")
 		// is there a username?
-		u, ok := dbUsers[un]
+                u, ok := dbUsers[un]
 		if !ok {
-			http.Error(w, "Username and/or password do not match", http.StatusForbidden)
+                        tpl.ExecuteTemplate(w, "login.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}, "Error":[]ErrorMessage{e}})
+			// http.Error(w, "Username and/or password do not match", http.StatusForbidden)
 			return
 		}
 		// does the entered password match the stored password?
 		err := bcrypt.CompareHashAndPassword(u.Password, []byte(p))
 		if err != nil {
-			http.Error(w, "Username and/or password do not match", http.StatusForbidden)
+                        tpl.ExecuteTemplate(w, "login.html", map[string]interface{}{"User":[]user{u}, "Meta":[]meta{m}, "Error":[]ErrorMessage{e}})
+			// http.Error(w, "Username and/or password do not match", http.StatusForbidden)
 			return
 		}
 		// create session

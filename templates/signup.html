@@ -9,13 +9,18 @@
     <body>
         <section class="container">
             <form class="form" method="POST">
+                {{range .Error}}
+                    <div class="form-group">                    
+                        <span class="error-message">{{.Error}}</span>                   
+                    </div>
+                {{end}}
                 <div class="form-group">
                     <label>Username</label>
-                    <input name="username" placeholder="username" type="text">
+                    <input name="username" placeholder="username" type="text" required>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input name="password" placeholder="password" type="text">
+                    <input name="password" placeholder="password" type="text" required>
                 </div>
                 <div class="form-group hide">
                     <label>First name</label>
